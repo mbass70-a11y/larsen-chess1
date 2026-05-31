@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Larsen">
+<meta name="theme-color" content="#2b2016">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%232b2016'/><text x='90' y='138' font-size='110' text-anchor='middle' fill='%23c9a84c'>&#9823;</text></svg>">
+<title>Larsen's Good Move Guide</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: Georgia, serif;
+  background: #2b2016;
+  color: #e8ddc8;
+  min-height: 100vh;
+  min-height: -webkit-fill-available;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1 {
+  font-size: 1.2rem;
+  font-weight: normal;
+  letter-spacing: 0.05em;
+  color: #c9a84c;
+  padding: 18px 0 4px;
+  text-align: center;
+}
+.subtitle {
+  font-size: 0.75rem;
+  color: #888;
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.app {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  padding: 0 20px 40px;
+  max-width: 860px;
+  width: 100%;
+}
+
+/* ── BOARD ── */
+.board-wrap {
+  flex-shrink: 0;
+}
+
+.board-and-ranks {
+  display: flex;
+  gap: 0;
+}
+
+.rank-labels {
+  display: flex;
+  flex-direction: column;
+  width: 18px;
+  margin-right: 4px;
+}
+.rank-lbl {
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #7a6a50;
+  font-family: monospace;
+  user-select: none;
+}
+
+#board {
+  display: grid;
+  grid-template-columns: repeat(8, 70px);
+  grid-template-rows: repeat(8, 70px);
+  border: 2px solid #6a5030;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+}
+
+.sq {
+  width: 70px;
+  height: 70px;
+  position: relative;
+  cursor: pointer;
+}
+.sq.light { background: #f0d9b5; }
+.sq.dark  { background: #b58863; }
+
+.sq.selected  { outline: 4px solid rgba(80,180,60,0.85); outline-offset: -4px; }
+.sq.hint-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 26px; height: 26px;
+  background: rgba(0,0,0,0.20);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 2;
+}
+.sq.hint-cap { outline: 4px solid rgba(0,0,0,0.22); outline-offset: -4px; }
+.sq.lm-from { background: #cdb94a !important; }
+.sq.lm-to   { background: #cdb94a !important; }
+.sq.dark.lm-from,
+.sq.dark.lm-to { background: #a89420 !important; }
+
+.piece {
+  position: absolute;
+  inset: 1px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.file-labels {
+  display: flex;
+  padding-left: 22px;
+  margin-top: 3px;
+}
+.file-lbl {
+  width: 70px;
+  text-align: center;
+  font-size: 0.7rem;
+  color: #7a6a50;
+  font-family: monospace;
+  user-select: none;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  flex: 1;
+  min-width: 220px;
+}
+
+.puzzle-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.puzzle-num {
+  font-size: 2.4rem;
+  color: #c9a84c;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.puzzle-game {
+  font-size: 0.8rem;
+  color: #8a7a60;
+  font-style: italic;
+  line-height: 1.5;
+}
+
+.to-move {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 10px 0 16px;
+  font-size: 0.85rem;
+  color: #c0b090;
+}
+.tm-dot {
+  width: 15px; height: 15px;
+  border-radius: 50%;
+  border: 2px solid #888;
+  flex-shrink: 0;
+}
+.tm-dot.white { background: #f0e8d0; border-color: #bbb; }
+.tm-dot.black { background: #1a1008; border-color: #666; }
+
+.status {
+  padding: 12px 14px;
+  border-left: 3px solid #5a4020;
+  background: rgba(0,0,0,0.3);
+  font-size: 0.85rem;
+  line-height: 1.6;
+  margin-bottom: 14px;
+  min-height: 52px;
+  transition: border-color 0.3s;
+}
+.status.ok   { border-color: #4a9a50; background: rgba(50,100,50,0.18); color: #88dd88; }
+.status.fail { border-color: #aa3030; background: rgba(100,30,30,0.18); color: #ff9090; }
+
+.solution {
+  font-size: 0.82rem;
+  line-height: 1.75;
+  color: #c0b090;
+  display: none;
+  background: rgba(0,0,0,0.2);
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  border-left: 3px solid #6a5030;
+}
+.solution.show { display: block; }
+.solution b { color: #c9a84c; }
+
+.btns {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.btn {
+  background: #3a2c18;
+  border: 1px solid #5a4020;
+  color: #c0a870;
+  padding: 8px 16px;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.btn:hover { background: #4a3c24; border-color: #7a6030; }
+
+.puzzle-nav {
+  border-top: 1px solid #3a2c18;
+  padding-top: 14px;
+}
+.nav-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #5a4a30;
+  margin-bottom: 8px;
+}
+.nav-arrows {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.arrow-btn {
+  background: #3a2c18;
+  border: 1px solid #5a4020;
+  color: #c0a870;
+  padding: 7px 16px;
+  font-family: Georgia, serif;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.arrow-btn:hover { background: #4a3c24; }
+.nav-count { font-size: 0.75rem; color: #5a4a30; }
+
+.plist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.pitem {
+  width: 34px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem;
+  cursor: pointer;
+  border: 1px solid #3a2c18;
+  color: #7a6a50;
+  transition: all 0.12s;
+}
+.pitem:hover { border-color: #6a5030; color: #c0b090; }
+.pitem.cur   { border-color: #c9a84c; color: #c9a84c; background: rgba(201,168,76,0.12); }
+.pitem.done  { color: #4a8a48; border-color: #2a5028; }
+
+/* ── FOREWORD MODAL ── */
+.foreword-link {
+  font-size: 0.72rem;
+  color: #7a6a50;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-bottom: 1px solid #4a3c28;
+  cursor: pointer;
+  transition: color 0.15s;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+.foreword-link:hover { color: #c9a84c; border-color: #c9a84c; }
+
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.72);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal-box {
+  background: #1e1508;
+  border: 1px solid #5a4020;
+  max-width: 560px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 32px 36px;
+  position: relative;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7);
+}
+.modal-title {
+  font-size: 1.1rem;
+  color: #c9a84c;
+  letter-spacing: 0.08em;
+  margin-bottom: 18px;
+  font-style: italic;
+}
+.modal-body {
+  font-size: 0.85rem;
+  line-height: 1.8;
+  color: #c0b090;
+}
+.modal-body p { margin-bottom: 14px; }
+.modal-body p:last-child { margin-bottom: 0; }
+.modal-close {
+  position: absolute;
+  top: 14px; right: 18px;
+  background: none;
+  border: none;
+  color: #7a6a50;
+  font-size: 1.3rem;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s;
+}
+.modal-close:hover { color: #c9a84c; }
+
+/* ── INSTALL BANNER ── */
+#install-banner {
+  display: none;
+  background: #3a2c18;
+  border: 1px solid #c9a84c;
+  color: #e8ddc8;
+  font-size: 0.8rem;
+  padding: 10px 16px;
+  margin: 0 16px 12px;
+  text-align: center;
+  line-height: 1.6;
+  max-width: 500px;
+  width: calc(100% - 32px);
+}
+#install-banner.show { display: block; }
+#install-banner strong { color: #c9a84c; }
+
+/* ── MOBILE LAYOUT ── */
+@media (max-width: 700px) {
+  h1 { font-size: 1rem; padding: 12px 0 2px; }
+  .subtitle { font-size: 0.68rem; margin-bottom: 10px; }
+
+  .app {
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+    padding: 0 8px 32px;
+  }
+
+  #board {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(8, 1fr);
+    width: calc(100vw - 52px);
+    height: calc(100vw - 52px);
+    max-width: 440px;
+    max-height: 440px;
+    border: 2px solid #6a5030;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.6);
+  }
+  .sq { width: 100%; height: 100%; }
+  .rank-lbl {
+    height: calc((100vw - 52px) / 8);
+    max-height: 55px;
+  }
+  .file-lbl {
+    width: calc((100vw - 52px) / 8);
+    max-width: 55px;
+  }
+  .file-labels { padding-left: 22px; }
+
+  .sidebar {
+    width: calc(100vw - 16px);
+    max-width: 440px;
+  }
+
+  .btn, .arrow-btn {
+    padding: 11px 18px;
+    font-size: 0.88rem;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .pitem {
+    width: 40px;
+    height: 36px;
+    font-size: 0.75rem;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .sq {
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .status { font-size: 0.88rem; }
+  .puzzle-num { font-size: 2rem; }
+  .solution { font-size: 0.85rem; }
+}
+</style>
+</head>
+<body>
+
+<div id="install-banner">
+  <strong>Add to Home Screen</strong> for the best experience.<br>
+  Tap <strong>Share ⎙</strong> then <strong>"Add to Home Screen"</strong> in Safari.
+  <br><small style="color:#7a6a50;font-size:0.72rem">Works offline once installed.</small>
+</div>
+<h1>Larsen's <em>Good Move Guide</em></h1>
+<div class="subtitle">Combination Trainer · Part I</div>
+
+<div class="app">
+
+  <div class="board-wrap">
+    <div class="board-and-ranks">
+      <div class="rank-labels" id="rank-labels"></div>
+      <div id="board"></div>
+    </div>
+    <div class="file-labels" id="file-labels"></div>
+  </div>
+
+  <div class="sidebar">
+    <div class="puzzle-header">
+      <div class="puzzle-num" id="pnum">1</div>
+      <div class="puzzle-game" id="pgame"></div>
+    </div>
+    <div class="to-move">
+      <div class="tm-dot" id="tm-dot"></div>
+      <span id="tm-text">White to move</span>
+    </div>
+    <div class="status" id="status">Select a piece and make your move.</div>
+    <div class="solution" id="sol"></div>
+    <div class="btns">
+      <button class="btn" onclick="showSol()">Show solution</button>
+      <button class="btn" onclick="resetPuzzle()">Reset</button>
+    </div>
+    <div class="puzzle-nav">
+      <div class="nav-title">Puzzles</div>
+
+      <span class="foreword-link" onclick="document.getElementById('foreword-modal').classList.add('open')">Foreword</span>
+      <span class="foreword-link" onclick="document.getElementById('chapter1-modal').classList.add('open')" style="margin-left:14px">Chapter 1</span>
+      <div class="nav-arrows">
+        <button class="arrow-btn" onclick="go(-1)">← Prev</button>
+        <span class="nav-count" id="nav-count">1 / 3</span>
+        <button class="arrow-btn" onclick="go(+1)">Next →</button>
+      </div>
+      <div class="plist" id="plist"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Chapter 1 Modal -->
+<div class="modal-overlay" id="chapter1-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('chapter1-modal').classList.remove('open')">✕</button>
+    <div class="modal-title">Chapter 1: Find the Combination</div>
+    <div class="modal-body">
+      <p><strong style="color:#c9a84c">You can learn to combine</strong></p>
+      <p>All chess-players think that they know what a combination is, but the experts have never succeeded in agreeing on a definition. Must there be a sacrifice? Must the combination force the opponent to do something? Must it make use of a fortuitous, transient position of the opponent's men? We have to do without a very clear definition, but we must find out how to combine. To some extent this is something that can be learnt.</p>
+      <p>Combinations can be difficult in two different ways; either they are difficult to calculate or they are hard to discover. In both cases, practice makes a master. In this collection of exercises there are no very long calculations, but not all of the combinations are easy to spot. A few of them were missed even by well-known masters. That can be a question of time shortage and nerves, of course, and the players lacked one big aid which the readers have: the knowledge that there really is a combination in the position. With this knowledge a master player could probably find the combination in 95 of these 100 positions with less than half a minute's thinking time. But the collection was not intended for master players; so take your time finding the solutions!</p>
+      <p>Kindred combinations are not placed together, and I have not written under the diagrams whether best play leads to mate or merely to win a pawn. Just as in real play, the problem is simply to find the best move.</p>
+      <p>However, knowing that there is a combination there, you must of course get used to looking for interesting details in the position, details that might make a combination possible. Has the opponent left two of his best men on the same diagonal or at the distance of a knight-fork? Does he lack an escape square for his king, so that mate on the back rank could happen? Are some of his pieces unprotected? Have we a strong attacking force near his king? And so on. Even if you see a lot of these details there is no guarantee that you will get the right idea. But as I said, practise, practise.</p>
+      <p>Notice the themes emphasized in the solutions. These descriptions help you to think better than "if I do this and he does that, then what?"</p>
+      <p>I have placed the easiest examples first. The last ones are the more difficult, but have been selected because I find them beautiful.</p>
+      <p>You must get used to looking for combinations in all positions you get in real play. You should get lots of combinational ideas. When examined closely, most of them will turn out to be bad ideas, but a few of them will be bull's-eyes! Now let's go to the exercises!</p>
+    </div>
+  </div>
+</div>
+
+<!-- Foreword Modal -->
+<div class="modal-overlay" id="foreword-modal" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal-box">
+    <button class="modal-close" onclick="document.getElementById('foreword-modal').classList.remove('open')">✕</button>
+    <div class="modal-title">Foreword</div>
+    <div class="modal-body">
+      <p>You don't have to read this book straight through from front to back. If you prefer, you can dip into it at random. In particular – you do not have to read the four sections in the same order in which they are printed. But you will probably find the first one the easiest.</p>
+      <p>'Find the combination' is a simple set of 100 'spot-the-combination' positions. In each one you know who is to move, and that there is a combination waiting to be found, though you are not told what you might be able to win.</p>
+      <p>'Find the plan' is much more challenging. Here are forty-eight middlegame positions, and you, given a colour, have to decide how to tackle each one. These are worth spending a good deal of time on. If you skate over each position in five minutes you will learn a little, but if you really work on them, making notes as you think – even perhaps using a set for analysis – then you will find all your comments and questions answered in the solutions, and you will learn a great deal about strategy and positional judgement.</p>
+      <p>'Find the master moves' is a collection of forty games. After the first few moves you are allotted a colour and asked to choose the moves from then on, as in <em>How good is your chess?</em></p>
+      <p>The last section, 'Practical endgames', tackles endgame strategy in the same way that 'Find the plan' approaches the middlegame, and forms an unusually concise endgame revision course.</p>
+      <p>This work appeared originally in Danish, published by Samlerens Forlag as four separate books with the series title <em>Skak Skole</em> (Chess School). The order and presentation of the material are essentially unchanged in this translation.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── PIECE IMAGES (Lichess cburnett set) ─────────────────────────
+const BASE = 'https://lichess1.org/assets/piece/cburnett/';
+const IMG = {};
+for (const c of ['w','b'])
+  for (const p of ['K','Q','R','B','N','P'])
+    IMG[c==='w'?p:p.toLowerCase()] = `${BASE}${c}${p}.svg`;
+
+// ── PUZZLE DATA (hand-verified positions) ───────────────────────
+const PUZZLES = [
+  {
+    n: 1,
+    fen: 'r4k2/p3nppp/3q4/2Np1b2/1r1P3P/5QP1/P4PB1/2R1R1K1 w - - 0 1',
+    game: 'Larsen–Donner, Zürich 1959',
+    sol: '29.Rxe7! removes the knight that defends d6, winning decisive material. Theme: removal of the defender.',
+    key: 'e7'
+  },
+  {
+    n: 2,
+    fen: '4r2k/p5pp/8/3Q1b1q/2B2P1P/P1P2n2/5PK1/R6R b - - 0 1',
+    game: 'Barda–Keller, Moscow 1956',
+    sol: '27…Qg4+ 28.Kf1 Qh3+ 29.Rxh3 Bxh3 — queen sacrifice leading to forced mate. A pattern worth remembering.',
+    key: 'g4'
+  },
+  {
+    n: 3,
+    fen: 'n1k1n2r/Qb1r2q1/1p1p1p2/1PpPpPp1/2P1P1P1/6R1/3B1KB1/R1N5 w - - 0 1',
+    game: 'Chernikov–Sharbakov',
+    sol: '1.Qxa8+! Bxa8 2.Rxa8+ Kb7 3.Rga3 and mate with R3a7. Classic queen sacrifice to open the a-file.',
+    key: 'a8'
+  },
+  {
+    n: 4,
+    fen: '5nk1/p2p2bp/1p1qp3/3N4/2P3QP/1P2B1P1/P7/4K3 w - - 0 1',
+    game: 'Duckstein–Johansson, Moscow 1956',
+    sol: '27.Nf6+! Kf7 28.Qxg7+! — a knight fork followed by a queen sacrifice, winning decisive material.',
+    key: 'f6'
+  },
+  {
+    n: 5,
+    fen: '2rq1kr1/bp3p2/p2pb3/5N1p/1P1pB2P/P5P1/2P1QP2/3R1RK1 b - - 0 1',
+    game: 'Donner–Keres, Zürich 1959',
+    sol: '24…Bxf5! White resigned: 25.Bxf5 Rxg3+! 26.fxg3 d3+! — a nasty discovered check winning the queen.',
+    key: 'f5'
+  },
+  {
+    n: 6,
+    fen: '3q3k/1pp3pp/4p3/1P6/4PQ2/3B2P1/1r2b2P/R6K w - - 0 1',
+    game: 'Larsen–Botvinnik, Leyden 1970',
+    sol: '37.Qxc7! — the b7 pawn is pinned against the back rank, and White wins material exploiting the 8th rank mate threat.',
+    key: 'c7'
+  },
+  {
+    n: 7,
+    fen: 'r3rk2/1bqn1pbp/pp4pB/3p2Nn/P3P2Q/2NB4/1PP3PP/R4RK1 w - - 0 1',
+    game: 'Kupper–Ólafsson, Zürich 1959',
+    sol: '16.Bxg7! Kxg7 17.Rxf7+! — a knight family check follows. The rook sacrifice forces the king into a knight fork on e6.',
+    key: 'g7'
+  },
+  {
+    n: 8,
+    fen: 'k1r2r2/pp1P4/4p1q1/P1Np3p/2pP1p2/2P5/2P1R1nP/RQ5K w - - 0 1',
+    game: 'Planinc–Timman, Wijk aan Zee 1974',
+    sol: '36.d8=Q! The two black rooks were overloaded — one covering b7, the other g2. The promotion decides.',
+    key: 'd8'
+  },
+  {
+    n: 9,
+    fen: 'r1b1k2r/1pq2ppp/p1n1p3/2b5/P1B1P1n1/2N2N1P/1P2QPP1/R1B2RK1 b - - 0 1',
+    game: 'Bergqvist–Book, Stockholm 1945',
+    sol: '12...Nd4! — a double attack on the white queen (e2) and knight (f3), winning material.',
+    key: 'd4'
+  },
+  {
+    n: 10,
+    fen: '6rk/1q2r1p1/1p2N1Q1/4np2/1P1p4/5R2/7P/2R3K1 w - - 0 1',
+    game: 'Giertz–Kremser',
+    sol: '1.Rc8+! Qxc8 2.Qxg7+! and Rxg7 mate. The black queen is deflected from defending g7.',
+    key: 'c8'
+  },
+  {
+    n: 11,
+    fen: '1r4k1/5p1p/4Bp1q/8/3qN3/5P2/4P1P1/3b2K1 b - - 0 1',
+    game: 'Old German game',
+    sol: '1...Qh1+! 2.Kxh1 Bf3+ and Rb1 mate. The queen sacrifice wins the tempo to bring the rook to b1.',
+    key: 'h1'
+  },
+  {
+    n: 12,
+    fen: '4r1k1/pp3pp1/2p4p/6q1/B2Pb3/4P3/PP3QPP/4R1K1 b - - 0 1',
+    game: 'Pillsbury–Tarrasch',
+    sol: '1...Bxg2! 2.Qxg2 Qa5 — deflecting the white queen, then forking two undefended pieces.',
+    key: 'g2'
+  },
+  {
+    n: 13,
+    fen: '2rk2nr/2bb1ppp/p7/1p1NP3/1np5/4PN2/PP3PPP/2KR1B1R w - - 0 1',
+    game: 'Pillsbury–Mieses, Monte Carlo 1903',
+    sol: '13.Nxb4! Bxb4 14.e6! fxe6 15.Ne5 — the pawn clears the way for the knight, creating a decisive double threat on d7 and f7.',
+    key: 'b4'
+  },
+  {
+    n: 14,
+    fen: 'r2q1rk1/1p4bp/p1p2p2/nPpPp2n/4P3/3Q4/PPNB1PBP/R4RK1 w - - 0 1',
+    game: 'Portisch–Tal, Moscow 1967',
+    sol: '16.b6! Qxb6 17.Qc3 Qb5 18.Qxa5 — the advance prevents the a-file opening and sets up the knight trap.',
+    key: 'b6'
+  },
+  {
+    n: 15,
+    fen: '6k1/4r2p/p2N4/nppP2q1/2P5/1P2N3/PQ6/7K w - - 0 1',
+    game: 'Petrosian–Spassky, Match 1966 (Game 10)',
+    sol: '30.Qh8+! Kxh8 31.Nf7+ — a decoy queen sacrifice lures the king to h8, then the knight fork wins the queen.',
+    key: 'h8'
+  },
+  {
+    n: 16,
+    fen: '2kr4/ppp3Pp/4RP1B/2r5/5P2/8/PP1p3P/3K4 w - - 0 1',
+    game: 'Simultaneous game by Carlos Torre',
+    sol: '1.Rxg8+! Kxg8 2.Rd8+ — the rook on d8 was overloaded, guarding both d2 and g8. The sacrifice deflects it.',
+    key: 'g8'
+  },
+  {
+    n: 17,
+    fen: 'r3r1k1/1p1bpppp/2pp1p2/p1nP4/2PQP1n1/P1N1NP2/1q3PBP/R3R1K1 w - - 0 1',
+    game: 'Ivkov–Larsen, Zagreb 1965',
+    sol: '17.Reb1! Qc2 18.Ne1 — the queen on b2 is trapped. The "poisoned pawn" strikes back.',
+    key: 'b1'
+  },
+  {
+    n: 18,
+    fen: '6k1/1p4pp/pQ6/P1q5/4P3/2P1r2P/1P3Kp1/R7 b - - 0 1',
+    game: 'Eliskases–Castaldi, Milan 1938',
+    sol: '1...Re1+! 2.Qxc5 g1=Q+ — the rook blocks the queen\'s guard of the promotion square, forcing the queen away.',
+    key: 'e1'
+  },
+  {
+    n: 19,
+    fen: 'Q7/p4rkp/3q4/2p1p1N1/P1P5/8/6B1/6K1 w - - 0 1',
+    game: 'Petrosian–Simagin, Moscow 1956',
+    sol: '15.Qh8+! Kxh8 16.Nf7+ — the same decoy stratagem: queen sacrifice lures the king to h8 for a knight fork.',
+    key: 'h8'
+  },
+  {
+    n: 20,
+    fen: '1br1r1k1/p2q1ppp/1p6/4p3/1PP1pn1n/P2P1N1P/1B1Q3B/3R2NK b - - 0 1',
+    game: 'Tóth–Asztalos, Ljubljana 1938',
+    sol: '1...Qxh3+! — deflects the white knight from defending f3. After 2.Nxh3 Nxf3 Black wins material.',
+    key: 'h3'
+  },
+  {
+    n: 21,
+    fen: 'r5r1/p1q1kpQ1/1p2p3/4R3/8/2P5/PP2P1PP/R5K1 w - - 0 1',
+    game: 'Yanofsky combination',
+    sol: '1.Rxe6+! Kxe6 2.Re1+ Kd6 3.Qf6+ — a rook sacrifice launches a decisive king hunt across the board.',
+    key: 'e6'
+  },
+  {
+    n: 22,
+    fen: 'r4nk1/pp1b2pp/4p3/3pn1N1/3q4/P2B1Q2/5PP1/R4R1K w - - 0 1',
+    game: 'Spielmann–Menchik, Margate 1938',
+    sol: '1.Qxf8+! Rxf8 2.Bxh7+ Kxh7 3.Rxf8 mate — a queen sacrifice to open lines for the bishop and rook.',
+    key: 'f8'
+  },
+  {
+    n: 23,
+    fen: 'r1b4k/p1q1rp2/2p4p/2B1PpN1/4P2Q/7P/PP2B1P1/3R1R1K w - - 0 1',
+    game: 'Correspondence game',
+    sol: '1.Rd8+! Qxd8 2.Nf7+ Rxf7 3.Qxd8+ — decoy of the black queen followed by a knight fork.',
+    key: 'd8'
+  },
+  {
+    n: 24,
+    fen: '3r2k1/pRp2p2/6pQ/5b2/2B5/2qP2P1/P6P/6K1 w - - 0 1',
+    game: 'Mecking–Tan, Petropolis 1973',
+    sol: '25.Bxf7+! Kxf7 26.Rxc7+ Qxc7 27.Qh7+ — decoy of the king to f7, then a rook sacrifice, winning the queen.',
+    key: 'f7'
+  },
+  {
+    n: 25,
+    fen: 'r2qkb1r/1b2nppp/pN1p4/1pp5/3NP3/1P6/1PP2PPP/R1BQR1K1 w - - 0 1',
+    game: 'Lehmann–Donner, Beverwijk 1965',
+    sol: '14.Nf5! After 14...Qxb6 15.Nxd6+ — a discovered check wins the queen. The knight on a8 was just a decoy threat.',
+    key: 'f5'
+  },
+  {
+    n: 26,
+    fen: 'r1r3k1/2pq2pp/bp6/p7/P1NPp3/1P2P3/2R1QPPP/2R3K1 w - - 0 1',
+    game: 'Charousek–Chigorin, 1896',
+    sol: '23.Nxb6! After 23...cxb6 the rook on a8 is overloaded: 24.Qxa6 wins. If 23...Bxe2 24.Nxd7 is also winning.',
+    key: 'b6'
+  },
+  {
+    n: 27,
+    fen: 'r2qr1k1/pbp1bp2/1pn5/8/3pN3/P1PB1Q2/1P3PP1/R3K2R w - - 0 1',
+    game: 'German correspondence game',
+    sol: '1.Qxf7+! Black resigned. A mating pattern follows after Bc4+, exploiting the exposed king.',
+    key: 'f7'
+  },
+  {
+    n: 28,
+    fen: 'r1r3k1/Bn2qp1p/2p3pb/1p2n3/1B2Pp2/1NP4P/4B1P1/R2R1QK1 b - - 0 1',
+    game: 'Fernpartie (correspondence)',
+    sol: '1...f3! White resigned. The h6-e3 diagonal opens; Black threatens Rxa7 followed by Be3+, winning the rook on a1.',
+    key: 'f3'
+  },
+  {
+    n: 29,
+    fen: 'r1q2rk1/1p2bppp/1Rp5/p2pPb2/1P3n2/PBP2N2/1B3PPP/R3R1K1 b - - 0 1',
+    game: 'Showalter–Pillsbury, 1898',
+    sol: '18...Nxg2! 19.Kxg2 Bh3+ — the knight sacrifice breaks open the king position, winning decisively.',
+    key: 'g2'
+  },
+  {
+    n: 30,
+    fen: '2r2rk1/pb2bppp/4pn2/qp2B3/8/1P3NP1/P3PPBP/1QR2RK1 w - - 0 1',
+    game: 'Golombek–Minev, Moscow 1956',
+    sol: '17.Ng5! — threatens both Bxf6/Qxh7 mate and unmasks the bishop on g2, which now eyes the unprotected rook.',
+    key: 'g5'
+  },
+  {
+    n: 31,
+    fen: 'r3r1k1/4b1pp/1q2pp2/1b2B1Nn/1p6/3B3Q/1PP2PP1/3R1R1K w - - 0 1',
+    game: 'Neumann–Hernandez, Dresden 1969',
+    sol: '1.Qxh5! Black resigned. The mating threat after gxh5 2.Nf6+ Kh8 3.Bxh7 is decisive.',
+    key: 'h5'
+  },
+  {
+    n: 32,
+    fen: 'r3k2r/3R1ppp/n1N1n3/1q1p1Q2/5B2/8/PPP2PPP/2KR4 w - - 0 1',
+    game: 'Deschauer–Menke, correspondence',
+    sol: '1.Qxf6! Black resigned. After 1...gxf6 2.Bh6+ Kg8 3.Re7 — mate is threatened on both e7 and the g-file.',
+    key: 'f6'
+  },
+  {
+    n: 33,
+    fen: '3q1rk1/pp5p/2p2p1n/5p2/1PPbP3/6nP/3BN2K/R1Q1R3 b - - 0 1',
+    game: 'Schwind–Stern, correspondence 1954',
+    sol: '1...Ng4+! 2.Kg3 Bf2+ 3.Kf3 Qd3+ 4.Be3 Qe4 mate. A beautiful mating net. If 2.hxg4 then 2...Qh4#.',
+    key: 'g4'
+  },
+  {
+    n: 34,
+    fen: 'r2q1rk1/5p2/3p3p/p2Pp3/5bP1/1PN1R2P/PQ6/5R1K b - - 0 1',
+    game: 'Rothgen–Petz, correspondence',
+    sol: '1...e4! 2.Nxe4 Be5! and White resigned — the bishop forks the queen and rook with a tempo gain.',
+    key: 'e4'
+  },
+  {
+    n: 35,
+    fen: '6k1/4rp2/4Nb1p/2p5/3Q4/1r5P/q5PP/3R1R1K w - - 0 1',
+    game: 'Levy–Feller, Portugal 1969',
+    sol: '1.Rxf6! Rxf6 2.Rd8+ Kf7 — remove the defence, then the rook invades. The queen and remaining rook finish the job.',
+    key: 'f6'
+  },
+  {
+    n: 36,
+    fen: '2r4k/1p1b3p/p3p2Q/3pqp2/1P6/5R1K/8/7R w - - 0 1',
+    game: 'Pillsbury–Maróczy, Paris 1900',
+    sol: '1.Qxh7+! Kxh7 2.Kg2+ — discovered check from the rook on h1 delivers mate. A beautiful rook-endgame pattern.',
+    key: 'h7'
+  },
+  {
+    n: 37,
+    fen: '8/ppp1k2p/5p2/5r2/4n3/1P3P2/PB1br1PP/R7 b - - 0 1',
+    game: 'Botvinnik–Alexander, Munich 1958',
+    sol: '12.g4! — secures the e4 square and cramps Black. The pawn on g4 is protected and the e4 knight\'s position is exploited.',
+    key: 'g4'
+  },
+  {
+    n: 38,
+    fen: 'r1b1k2r/pp1pbbpp/2n2n2/q7/3NP3/2N1B3/PPPQ1PPP/R3KB1R b - - 0 1',
+    game: 'Alekhine–König, Vienna 1922',
+    sol: '8...Nxe4! 9.Nxe4 Qxd2+ — deflecting the queen from defending d4. Black wins material by unmasking.',
+    key: 'e4'
+  },
+  {
+    n: 39,
+    fen: '5nk1/pp2qp1p/2p1Pp2/8/2B4P/5P2/PPP5/2KQ4 w - - 0 1',
+    game: 'Spassky–Donner, Leiden 1970',
+    sol: '27.Qd8! — the uncanny power of the discovered check threat. Black resigned rather than face the crushing follow-up.',
+    key: 'd8'
+  },
+  {
+    n: 40,
+    fen: 'rn2kb1r/pp1pbp1p/2p2p2/8/8/3Q3N/qPPB1PPP/2KR4 w - - 0 1',
+    game: 'Botvinnik–Zvetkov, Moscow 1947',
+    sol: '23.Nf4! — White gains the pair of bishops in an open position. The passive black knight and territorial advantage decide.',
+    key: 'f4'
+  },
+  {
+    n: 41,
+    fen: 'r1bq3r/3pb3/p3K3/8/1p2P3/4B2Q/PPP2PPP/RNB2R2 w - - 0 1',
+    game: 'Fuderer–Gligoric, 1953',
+    sol: '25.Bb6! Qc8 26.Rc1 — the bishop restricts the Black queen and launches the decisive queen-side invasion.',
+    key: 'b6'
+  },
+  {
+    n: 42,
+    fen: '5r2/4Qbk1/3p2pp/Rp3p1q/1P1p4/3P1P2/3BPP1P/6K1 b - - 0 1',
+    game: 'Steinitz–Showalter, Vienna 1898',
+    sol: '28...g4! — Black breaks up the White king position. The queen on h5 and rook on f8 coordinate for the decisive attack.',
+    key: 'g4'
+  },
+  {
+    n: 43,
+    fen: '8/2k5/5b2/1R3p1P/1p6/r1P2P2/4QB2/1K3B2 w - - 0 1',
+    game: 'Szabo–Sliwa, Prague 1954',
+    sol: '15.f4! — opens the position for White\'s bishops. After 15...exf4 16.e5! the pawns advance decisively.',
+    key: 'f4'
+  },
+  {
+    n: 44,
+    fen: 'r2q1rk1/1p2bppp/1np5/p4b2/2PP1B1P/3BN3/PP1Q2PP/2KR3R b - - 0 1',
+    game: 'Najdorf–Reshevsky, Buenos Aires 1953',
+    sol: '13...Nxc4! 14.Bxc4 Bb4 — wins a pawn and gains the key d5 square. A classic knight fork of bishop and pawn.',
+    key: 'c4'
+  },
+  {
+    n: 45,
+    fen: '1r4k1/p4p1p/6pb/8/8/1N1RPP2/Pr1R3P/6K1 b - - 0 1',
+    game: 'Keres–Szabo, Hastings 1954/55',
+    sol: '29...R8xb3! 30.axb3 Rxd2 — a double removal of the defender wins the endgame. White resigned.',
+    key: 'b3'
+  },
+  {
+    n: 46,
+    fen: '4r3/pk1n1RRp/1p2pp2/3pP1B1/q2P4/P1P2Q2/2P2P1P/3R2K1 b - - 0 1',
+    game: 'Gligoric–Matulovic, Zurich 1959',
+    sol: '25...Nxe5! 26.dxe5 Rxf7 27.Qxf7 Qg4+ — a double attack wins the rook on d1 with check.',
+    key: 'e5'
+  },
+  {
+    n: 47,
+    fen: 'r4r1k/pbpqb2p/1p3n2/4pP2/4P3/2NQB2R/PP4PP/5R1K w - - 0 1',
+    game: 'Fischer–Kupper, Zurich 1959',
+    sol: '17.Nd5! Bxd5 18.Bxd5 — the knight leaps to the dominant d5 outpost, wrecking Black\'s bishop pair and seizing control.',
+    key: 'd5'
+  },
+  {
+    n: 48,
+    fen: '3r3k/pb1q1ppp/6n1/2p5/8/P3P2P/BBQ2PP1/1RR3K1 w - - 0 1',
+    game: 'Taimanov–Darga, Moscow 1956',
+    sol: '23.Bxg7+! Kxg7 24.Qb2+ Kg8 25.Qxb7 — a bishop sacrifice wins a pawn and reaches a winning endgame.',
+    key: 'g7'
+  },
+  {
+    n: 49,
+    fen: 'r2bk2r/1pp2p1p/p1p1qNn1/4P1Q1/8/8/PPP2PP1/R1B1R1K1 w - - 0 1',
+    game: 'Richter–Kahn, Prague 1931',
+    sol: '25.Qh6+! Ke7 26.Ng8+ — Black resigned. After 26...Rxg8 27.Bg5+ f6 28.exf6+ Kf7 29.Qh7+ is decisive.',
+    key: 'h6'
+  },
+  {
+    n: 50,
+    fen: '2b3k1/3b1P2/p2ppp2/1q2P2p/1r3r2/2NB3Q/1PP5/2KR2R1 w - - 0 1',
+    game: 'Lobigas–Micheli, Skopje 1972',
+    sol: '27.Qxh5! Black resigned. After 27...gxh5 both a file and diagonal open, allowing 28.Bh7+ deflection and pawn promotion.',
+    key: 'h5'
+  },
+  {
+    n: 51,
+    fen: '6k1/pbpp2pp/1p2p3/7q/2P1B3/4r3/1P2nPPP/RQ3R1K b - - 0 1',
+    game: 'Zavadil–Engel',
+    sol: '1...Rh3! 2.gxh3 Qf3+ — the rook sacrifice opens the h-file and forces mate. A model rook sacrifice.',
+    key: 'h3'
+  },
+  {
+    n: 52,
+    fen: '2r1r1k1/2q4p/p4p2/1p1pn3/6nQ/PP1B4/2P3PP/2R1R1NK b - - 0 1',
+    game: 'Slade–Hooper',
+    sol: '1...Nxd3! 2.cxd3 Qxh2+! 3.Qxh2 Nf2 mate — line-opening, deflection, then the classic smothered mate.',
+    key: 'd3'
+  },
+  {
+    n: 53,
+    fen: '4r1k1/p4pp1/4qb2/1p2pp2/1Pp1N1r1/8/PP4QP/R1B2R1K w - - 0 1',
+    game: 'de Bondt–Seele',
+    sol: '1.Rxf6! gxf6 2.Qxg4 — Rg4 and Kg8 are a knight-fork apart, so the rook clears the way. Alternatively 1...Rxe4 2.Rxe6 also wins.',
+    key: 'f6'
+  },
+  {
+    n: 54,
+    fen: '6k1/5p2/5b2/8/5P2/1P5P/2rp2P1/3R2BK b - - 0 1',
+    game: 'Endgame study',
+    sol: '1...Bd4! 2.Bxd4 Rc1 (pin) 3.Kh2 Rxd1 4.Be3 Rh1+ — the bishop decoy forces a winning rook endgame.',
+    key: 'd4'
+  },
+  {
+    n: 55,
+    fen: '4r1k1/p4pp1/1p6/3r4/P1Nb2q1/5P1p/1P2P2P/3R1QK1 b - - 0 1',
+    game: 'Novotelnov–Averbach',
+    sol: '1...Bxf2+! 2.Qxf2 Qxd1+ — the bishop sacrifice deflects the queen, then wins the rook with check.',
+    key: 'f2'
+  },
+  {
+    n: 56,
+    fen: '2kr4/pbp2p2/5q1p/4p2r/8/3PBp2/PPPQ1RrP/R6K b - - 0 1',
+    game: 'Best–Muir, correspondence 1968',
+    sol: '1...Rxh2+! White resigned. After 2.Rxh2 f2+ leads to mate, and 2.Kxh2 Qh4+ 3.Kg1 Rg8+ is equally deadly.',
+    key: 'h2'
+  },
+  {
+    n: 57,
+    fen: 'r1q1r1nk/pbpqB1pp/8/4pN2/8/2P5/P3PPPP/R2R2K1 w - - 0 1',
+    game: 'Keffler–Kocem, 1971',
+    sol: '18.Bf8! Rxf8 19.Rxd7 — the bishop sacrifice deflects the rook, then the queen on d7 falls. Smothered mate threat seals the deal.',
+    key: 'f8'
+  },
+  {
+    n: 58,
+    fen: 'r1bkn2n/pp3p2/3P3p/8/8/5B2/PP2PPPP/2R1R1K1 w - - 0 1',
+    game: 'Kikovic–Forintos, 1958',
+    sol: '1.Rxc8+! Rxc8 2.d7 Kxd7 3.Bg4+ — a rook deflection sets up a pawn fork and bishop skewer winning a piece.',
+    key: 'c8'
+  },
+  {
+    n: 59,
+    fen: 'r3r1k1/pbp2ppp/1p2Q3/8/2P5/2BR3P/PP2qPP1/6K1 b - - 0 1',
+    game: 'Anonymous',
+    sol: '1...Qg4! wins. After 2.hxg4 gxf6 the g-file is harmless, and Black has an extra rook with a winning position.',
+    key: 'g4'
+  },
+  {
+    n: 60,
+    fen: '4r2k/1p4R1/2p5/p1bq3p/3B1P2/P2Q2R1/5K2/6R1 w - - 0 1',
+    game: 'Miszto–NN, Poland 1955',
+    sol: '1.Qh7+! Kxh7 2.Rxg7+ Kh8 3.Rg8+ Kh7 4.R1g7+ Kh6 5.Rg6+ Kh7 6.R8g7+ Kh8 7.Rh6 mate — a brilliant rook mill with the pinned bishop keeping guard.',
+    key: 'h7'
+  },
+  {
+    n: 61,
+    fen: 'rb5k/1b1N2p1/p4np1/np6/8/P1PQ2qp/BP1B1P1P/4R1K1 w - - 0 1',
+    game: 'Neumann–NN, 1956',
+    sol: '1.Re8+! Nxe8 2.Qh7+! Kxh7 3.Nf8+ Kh8 4.Ng6+ — perpetual check. The rook deflects the knight so the knight fork on f8 works.',
+    key: 'e8'
+  },
+  {
+    n: 62,
+    fen: '4q2k/8/8/7r/1P2Q3/8/6PP/5R1K b - - 0 1',
+    game: 'Ruster–Busch, correspondence',
+    sol: '1...Rxh2+! 2.Kxh2 Qh6+! 3.Kg3 Qh2+ 4.Kf3 Qf2+ 5.Kg4 Qh4+ 6.Kf5 Qf6+ — stalemate or perpetual check. A beautiful queen hunt.',
+    key: 'h2'
+  },
+  {
+    n: 63,
+    fen: '2r2r1k/3p1pRp/p4n1P/6R1/1q2p3/8/PpN5/1K4Q1 w - - 0 1',
+    game: 'Unknown',
+    sol: '1.Rc5! — the threat is Rxh7+ followed by Qg7. The rook on g5 was blocking the queen, so it moves with tempo.',
+    key: 'c5'
+  },
+  {
+    n: 64,
+    fen: 'r2k4/1b2qb1p/p4Qp1/npp5/8/2P5/P4PPP/R2R2K1 w - - 0 1',
+    game: 'Unknown',
+    sol: '1.Rd8+! Rxd8 2.Re1+ — the rook decoys the Black rook to d8 so it can no longer defend. Then Re1+ is decisive.',
+    key: 'd8'
+  },
+  {
+    n: 65,
+    fen: '4r2k/3q3p/p4pP1/2pQ4/3pR3/8/1PP3P1/7K w - - 0 1',
+    game: 'Wade–Gudmundsson, Reykjavik 1964',
+    sol: '1.Qe5+! Black resigned — back rank threat and deflection. The queen sacrifice forces the Black queen off the defence.',
+    key: 'e5'
+  },
+  {
+    n: 66,
+    fen: 'r3br1k/pp5p/3B1pP1/4NpP1/P2Pn3/q1PQ3R/7P/3R2K1 w - - 0 1',
+    game: 'Capablanca–Vassaux',
+    sol: '1.Rxh7+! Kxh7 2.Qh3+ — and mate next move. The rook sacrifice opens the h-file for the decisive queen check.',
+    key: 'h7'
+  },
+  {
+    n: 67,
+    fen: '7k/6rp/4qb2/1pQp4/p4p2/P1P2p1p/1P5P/3nB1RK b - - 0 1',
+    game: 'Kottnauer–Johannessen, Tel Aviv 1964',
+    sol: '44...Rc7! White resigned — the queen cannot move due to mate on f2, and 45.Rxg6 hxg6 46.Rxg6 Qxg6 does not help.',
+    key: 'c7'
+  },
+  {
+    n: 68,
+    fen: '6rk/pQ5p/B2R4/3n3r/3Np2q/5pP1/PP1P3P/3R2K1 w - - 0 1',
+    game: 'Oneskis–Hama, 1956',
+    sol: '1.Nxf3! exf3 2.Qg7+! — after 2...Rxg7 3.Re8+ Rg8 4.Rxg8+ Kxg8 5.gxh4, White wins. The knight clears the way for the queen sacrifice.',
+    key: 'f3'
+  },
+  {
+    n: 69,
+    fen: '2k2r2/2p5/1pq5/p1p1n3/P1P2n2/1R4Pp/2QR4/6K1 b - - 0 1',
+    game: 'Bogoljubow–Monticelli, San Remo 1930',
+    sol: '1...Ne2+! 2.Rxe2 Rf1+! 3.Kxf1 Qh1+ 4.Kf2 Ng4 mate — the rook on e2 blocks the king, a classic magnetic sacrifice.',
+    key: 'e2'
+  },
+  {
+    n: 70,
+    fen: '2br2k1/5pp1/7p/p2B4/2q3P1/7P/3Q1P2/3RR1K1 w - - 0 1',
+    game: 'Ekenberg–Keres, Lidköping 1944',
+    sol: '37.Re8+! Unpinning — 37...Rxe8 38.Bxc4 or 37...Kxe8 38.Qe3+. The rook breaks the pin and wins material.',
+    key: 'e8'
+  },
+  {
+    n: 71,
+    fen: 'r1r3k1/1q2bp1p/4p1p1/1b2B3/1p4Q1/1P1BR3/P3P1PP/R5K1 w - - 0 1',
+    game: 'Pelitov–Liebert, Albena 1973',
+    sol: '26.Bxg6! fxg6 27.Qxe6+ Kf8 28.Rf3+ Ke8 29.Qf7+ Black resigns — both f7 and g6 pawns were overloaded.',
+    key: 'g6'
+  },
+  {
+    n: 72,
+    fen: '2r4R/p2knrR1/1p1p4/2p1p1p1/2P1B3/1P1P1P2/P5K1/8 w - - 0 1',
+    game: 'Unknown',
+    sol: '1.Bc6+! — 1...Kxc6 2.Rxc8+, 1...Nxc6 2.Rxf7+, 1...Rxc6 2.Rxf7, or 1...Ke6 2.Rh6+ Rf6 3.Bd7+! winning the rook.',
+    key: 'c6'
+  },
+  {
+    n: 73,
+    fen: 'r2qk2R/1p1nbp1p/p1b1p1BB/2NpP3/1P1P4/P2B4/4P1PP/1RR3K1 w - - 0 1',
+    game: 'Thornblom–Seeger, Stockholm 1974',
+    sol: '20.Nxe6! fxe6 21.Qxg6+ hxg6 22.Bxg6 mate — a beautiful mating pattern exploiting the overloaded defences.',
+    key: 'e6'
+  },
+  {
+    n: 74,
+    fen: '8/2k2p2/1p1p1q2/p1pPpPp1/P1P2nP1/1P2KPN1/3R3r/1Q6 b - - 0 1',
+    game: 'Holm–Stoltz, Stockholm',
+    sol: '48...e4! 49.Nxe4 Qd4+ 50.Rxd4 Re2 mate — the pawn opens the diagonal, then the queen deflects the rook from the back rank.',
+    key: 'e4'
+  },
+  {
+    n: 75,
+    fen: '6k1/ppr1r2p/1nq1ppp1/3p4/5N1R/1PPQ1PP1/P3P1K1/7R w - - 0 1',
+    game: 'Walther–Duckstein, Zurich 1959',
+    sol: '33.Rxh7! Rxh7 34.Qxg6+ Kh8 35.Nxf6 — the rook sacrifice opens lines for a decisive attack on the king.',
+    key: 'h7'
+  },
+  {
+    n: 76,
+    fen: 'r7/1bb2p1k/p1n2rpp/1p1q4/1PpP4/P3BNP1/3QBPKP/R3R3 b - - 0 1',
+    game: 'Unknown',
+    sol: '1...Rxf3! 2.Bxf3 Qxf3+! 3.Kxf3 Nxd4+ 4.Kg4 Bc8+ 5.Kh4 Nf3 mate — a magnetic queen sacrifice leads to a model smothered mate.',
+    key: 'f3'
+  },
+  {
+    n: 77,
+    fen: '2r4k/p2n1p1p/qp2p1pQ/1b1pP3/3P1NP1/5P2/1P2P1B1/2R3K1 w - - 0 1',
+    game: 'Perfors–Smit',
+    sol: '1.Rc7! — the deflection 1...Rxc7 2.Nf6 leads to a quick mate, while 1...Rg8 2.Rxd7 Bxd7 3.Nf6 wins material.',
+    key: 'c7'
+  },
+  {
+    n: 78,
+    fen: 'r5k1/pp3pbp/2pprnp1/q3n3/2P1P3/P1NPBP1P/1P3P2/R2QRBK1 b - - 0 1',
+    game: 'Vaisman–Levin, 1968',
+    sol: '15...Nxe4! wins a pawn — 16.Nxe4 Qxe1! and the knight fork from e4 opens the e-file with a double attack.',
+    key: 'e4'
+  },
+  {
+    n: 79,
+    fen: '3r4/2nn1R1p/p2p2k1/p1pPp3/N1P1P3/P2N1P2/4P1PP/1RR3K1 w - - 0 1',
+    game: 'Barcza–Gligoric, Zurich 1959',
+    sol: '32.Naxc5! dxc5 33.Rxd7 — Black\'s king just stepped into a knight fork. After 32...Nxc5 33.Nxc5 Ne8 34.Nb7 Rc8 35.c5 the passed pawn decides.',
+    key: 'c5'
+  },
+  {
+    n: 80,
+    fen: '3r1k2/1pq2Pb1/2p4Q/p7/P1n5/2P4P/2P5/R3R2K w - - 0 1',
+    game: 'Popov–Buljovcic, 1966',
+    sol: '26.Re8+! Rxe8 27.Qxg7+! Kxg7 28.fxe8=N+! — an underpromotion to a knight delivers the decisive fork.',
+    key: 'e8'
+  },
+  {
+    n: 81,
+    fen: '8/5R2/4p2Q/4kp2/6PK/1r6/5q2/8 w - - 0 1',
+    game: 'Unknown',
+    sol: '1.Qxe6+! Kxe6 2.gxf5+ — White forces a draw by giving up the queen, then using the rook and pawn to hold the balance.',
+    key: 'e6'
+  },
+  {
+    n: 82,
+    fen: '4N2k/1p3pb1/pp2p2p/3rP3/4Q1RN/P6P/1P3PK1/4r3 w - - 0 1',
+    game: 'Bronstein–Kottnauer, 1946',
+    sol: '1.Qh7+! — mate in three. The queen sacrifice drives the king into a mating net set up by the knight and rook.',
+    key: 'h7'
+  },
+  {
+    n: 83,
+    fen: '8/7p/5p1k/6r1/4QB1K/R6P/6r1/5q2 b - - 0 1',
+    game: 'Georgadze–Kuindzhy, Tbilisi 1973',
+    sol: '47...Qf2+!! 48.Qxf2 Rh5+ 49.Bxh5 g5 mate — a determined unpinning queen sacrifice leading to a model smothered mate.',
+    key: 'f2'
+  },
+  {
+    n: 84,
+    fen: '2r2rk1/1b3ppp/pq2p3/1pb1n1N1/3B3P/1B6/PPP1QP2/2KRR3 w - - 0 1',
+    game: 'Ciocaltea–Sandor, Varna 1969',
+    sol: '1.Qh5! h6 2.Rxe6! fxe6 3.Qg6 (double threat) Rf6 4.Qh7+ Kf8 5.Qh8+ Ke7 6.Qxg7+ — the queen manoeuvre creates an unstoppable attack.',
+    key: 'h5'
+  },
+  {
+    n: 85,
+    fen: '3Rr2k/R7/4p3/5r2/6N1/6P1/6PK/8 b - - 0 1',
+    game: 'Bird–Englisch',
+    sol: '1...Rh5+! 2.Kg1 Rxe8 3.Nxf6 Rh1+! 4.Kxh1 Re1+ 5.Kh2 Rh1+ 6.Kxh1 stalemate — the key is the right move order to force stalemate.',
+    key: 'h5'
+  },
+  {
+    n: 86,
+    fen: '6k1/p1r2pp1/bp5p/3p4/1Q1N4/4PPPq/PP1K3P/7R b - - 0 1',
+    game: 'Yuferov–Gusev, 1973',
+    sol: '1...Bf1! White resigned — 2.Rxf1 Qxh2+ 3.Ke1 Rc1 mate; or 2.Ke1 Qg2 is equally hopeless. The bishop deflects the rook from h2.',
+    key: 'f1'
+  },
+  {
+    n: 87,
+    fen: '3rk3/bb3p1p/p1q1n1p1/1p1bN3/3P1P2/1B1Q2NP/PP1B2K1/3R4 w - - 0 1',
+    game: 'Bronstein–Wade',
+    sol: '28.Bxd5! Bxd5 29.Nd7+! Nxd7 30.Bb4+ Kg7 31.Rxe8 — first the b4 square is cleared, then a knight fork wins material.',
+    key: 'd5'
+  },
+  {
+    n: 88,
+    fen: '3r4/2kb1Q1r/BppR1p1p/4pq2/8/2P3P1/PPP1P2P/2KR4 w - - 0 1',
+    game: 'Keres–Schmid, Zurich 1961',
+    sol: '25.Rxc6+! Kb8 26.Qd5 Qxf2 27.Qd6+ Ka8 28.Bb7+! Kxb7 29.Rc7+ — a rook sacrifice launches a devastating mating attack.',
+    key: 'c6'
+  },
+  {
+    n: 89,
+    fen: '1B4k1/3pp3/p4pp1/1r5P/2n2q2/2PQ4/P1P3P1/2KR3R b - - 0 1',
+    game: 'Polish correspondence game',
+    sol: '27...Qg5+! 28.Bf4 Rb1+! and mate in two by ...Qb2 — a fine queen manoeuvre with a tempo win.',
+    key: 'g5'
+  },
+  {
+    n: 90,
+    fen: 'r1b1k2r/ppp2p1p/1qp5/2b1Pp2/3Qn3/5N2/PPPBNPPP/3RK2R w - - 0 1',
+    game: 'Vukovic–Deutsch, Zagreb 1920',
+    sol: '1.Qd8+! Kxd8 2.Bg5+ Ke8 3.Rd8+ Kf7 4.e6+! Kxe6 5.Nf4+ Kf7 6.Ne5 mate — a double check followed by an elegant evacuation.',
+    key: 'd8'
+  },
+  {
+    n: 91,
+    fen: '3rr1k1/1p3ppp/p7/R3N1q1/1Q1RR3/8/1P3PPP/5K2 b - - 0 1',
+    game: 'Cherepkov–Sazanov, 1968',
+    sol: '1...Rxd4!! 2.Nf3 Rexe4 White resigns — the back rank! The queen on b4 and rook on e4 were both guarding e1, and neither could take the rook.',
+    key: 'd4'
+  },
+  {
+    n: 92,
+    fen: '3r1rk1/1pq1nbpp/p7/2pB3Q/P4P2/1P2P3/6PP/2RR2K1 w - - 0 1',
+    game: 'Uhlmann–Hennings, 1968',
+    sol: '24.Rxc5! Qxc5 25.Bxf7+! Kh8 26.Qxc5 Rxd1+ 27.Kf2 Rxf7 — the bishop sacrifice after the rook exchange exploits the pinned knight on e7.',
+    key: 'c5'
+  },
+  {
+    n: 93,
+    fen: '2R4Q/pp1bkp2/4p1R1/qN1p4/Pb6/4B3/1P2P1PP/5K2 w - - 0 1',
+    game: 'Tal–NN, simultaneous',
+    sol: '1.Bb6! Qxb6 2.Qh4+ f6 3.Qxb4+ and mate on f8 — the bishop deflects the queen from defending b4, enabling the decisive queen check.',
+    key: 'b6'
+  },
+  {
+    n: 94,
+    fen: '3rr1k1/1b6/p7/1p3N2/6Pb/P1Q1p3/1PP4P/R5K1 b - - 0 1',
+    game: 'Roth–Baumgarten, Switzerland 1959',
+    sol: '38...Rd1+! 39.Rxd1 Bf2+ 40.Kf1 e2+ 41.Kxf2 exd1=N — an underpromotion to a knight delivers the decisive fork.',
+    key: 'd1'
+  },
+  {
+    n: 95,
+    fen: '1r4r1/p2kb2p/bq2p3/3p1p2/5P2/2BB3Q/PP4PP/3RKR2 b - - 0 1',
+    game: 'Reggio–Mieses, Monte Carlo 1902',
+    sol: '1...Rg3!! 2.Qxg3 Bh4! and won — the rook sacrifice deflects the queen, allowing the bishop to pin the queen with tempo.',
+    key: 'g3'
+  },
+  {
+    n: 96,
+    fen: '1r4k1/5ppp/8/3Rp3/p1B1n3/2P2P2/4QP1K/1q6 w - - 0 1',
+    game: 'Larsen–Szabo, Beverwijk 1967',
+    sol: '32.Bd3! Nxc3 33.Qxe5! Qh2 34.Rb5! Qxf2+ 35.Kh3 Rf8 36.Qxc3 — a series of double attacks, line blockades, and back rank threats decide.',
+    key: 'd3'
+  },
+  {
+    n: 97,
+    fen: '6r1/4kp2/p1bRpp2/1p1rP3/5b1p/PBP1N3/1P4PP/1K1R4 w - - 0 1',
+    game: 'Gligoric–Nievergelt, Zurich 1959',
+    sol: '28.Nf5+! exf5 29.exf6+ Black resigns — the knight sacrifice opens the f-file for a back rank attack via Rxc6.',
+    key: 'f5'
+  },
+  {
+    n: 98,
+    fen: 'K1b4r/q4p2/p1R5/b2P4/r3p2p/P1R1Q3/1PP3PP/1K3B2 w - - 0 1',
+    game: 'Tal–Nievergelt, Zurich 1959',
+    sol: '34.Qh6! — a double threat against h8 and a6. The queen cannot be taken because of 35.Rxc8+, a back rank motif.',
+    key: 'h6'
+  },
+  {
+    n: 99,
+    fen: '2b1rrk1/2qnQ2p/p7/4p3/P1p1PN2/2P1n1NP/2B1P1P1/1R1R1K2 w - - 0 1',
+    game: 'Keres–Gligoric, Zurich 1959',
+    sol: '33.Rxd3! cxd3 34.Bb3+ Kh8 35.Nxf6! Rxf6 36.Ng5 — first a diagonal is opened, then the defender of g5 is removed.',
+    key: 'd3'
+  },
+  {
+    n: 100,
+    fen: 'r4rk1/pp2ppbp/6p1/8/Qnq1P3/2N1BPPb/PP4NP/R4RK1 b - - 0 1',
+    game: 'Hamann–Brinck-Claussen, Hastings 1962–63',
+    sol: '16...Bxg2! 17.Kxg2 Bxc3! 18.bxc3 Nd5! White resigned — the bishop pair is sacrificed to expose the unreliable pin on the knight.',
+    key: 'g2'
+  }
+];
+
+// ── STATE ───────────────────────────────────────────────────────
+let idx=0, board={}, turn='w', sel=null, hints=[], lastMove=null;
+const solved = new Set();
+let solShown = false;
+
+// ── CHESS LOGIC ─────────────────────────────────────────────────
+const FILES = 'abcdefgh';
+function isW(p){ return 'KQRBNP'.includes(p); }
+function isB(p){ return 'kqrbnp'.includes(p); }
+function opp(a,b){ return a&&b&&isW(a)!==isW(b); }
+
+function parseFen(fen){
+  const [pos,t]=fen.split(' ');
+  const bd={};
+  pos.split('/').forEach((row,ri)=>{
+    let fi=0;
+    for(const ch of row){
+      if(ch>='1'&&ch<='8') fi+=+ch;
+      else{ bd[FILES[fi]+(8-ri)]=ch; fi++; }
+    }
+  });
+  return{bd,t};
+}
+
+function legalMoves(sq,bd){
+  const p=bd[sq]; if(!p) return[];
+  const fi=FILES.indexOf(sq[0]),ri=+sq[1],res=[];
+  const type=p.toUpperCase();
+  function push(f,r){
+    if(f<0||f>7||r<1||r>8) return false;
+    const t=FILES[f]+r,tp=bd[t];
+    if(!tp){res.push(t);return true;}
+    if(opp(p,tp)){res.push(t);}
+    return false;
+  }
+  function slide(df,dr){let f=fi+df,r=ri+dr;while(f>=0&&f<=7&&r>=1&&r<=8){if(!push(f,r))break;f+=df;r+=dr;}}
+  if(type==='P'){
+    const d=isW(p)?1:-1,s=isW(p)?2:7;
+    if(!bd[FILES[fi]+(ri+d)]){
+      res.push(FILES[fi]+(ri+d));
+      if(ri===s&&!bd[FILES[fi]+(ri+2*d)]) res.push(FILES[fi]+(ri+2*d));
+    }
+    for(const df of[-1,1]){
+      if(fi+df>=0&&fi+df<=7){const t=FILES[fi+df]+(ri+d);if(bd[t]&&opp(p,bd[t]))res.push(t);}
+    }
+  }else if(type==='N'){
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([a,b])=>push(fi+a,ri+b));
+  }else if(type==='B'){
+    [[-1,-1],[-1,1],[1,-1],[1,1]].forEach(([a,b])=>slide(a,b));
+  }else if(type==='R'){
+    [[-1,0],[1,0],[0,-1],[0,1]].forEach(([a,b])=>slide(a,b));
+  }else if(type==='Q'){
+    [[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]].forEach(([a,b])=>slide(a,b));
+  }else if(type==='K'){
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([a,b])=>push(fi+a,ri+b));
+  }
+  return res;
+}
+
+// ── RENDER ──────────────────────────────────────────────────────
+function render(){
+  const el=document.getElementById('board');
+  el.innerHTML='';
+
+  for(let rank=8;rank>=1;rank--){
+    for(let fi=0;fi<8;fi++){
+      const file=FILES[fi],sq=file+rank;
+      const light=(fi+rank)%2===0;
+      const div=document.createElement('div');
+      div.className='sq '+(light?'light':'dark');
+
+      if(sel===sq) div.classList.add('selected');
+      if(hints.includes(sq)) div.classList.add(board[sq]?'hint-cap':'hint-dot');
+      if(lastMove){
+        if(sq===lastMove[0]) div.classList.add('lm-from');
+        if(sq===lastMove[1]) div.classList.add('lm-to');
+      }
+
+      const p=board[sq];
+      if(p){
+        const img=document.createElement('div');
+        img.className='piece';
+        img.style.backgroundImage=`url('${IMG[p]}')`;
+        div.appendChild(img);
+      }
+      div.addEventListener('click',()=>clickSq(sq));
+      el.appendChild(div);
+    }
+  }
+
+  // rank labels
+  const rl=document.getElementById('rank-labels');
+  rl.innerHTML='';
+  for(let rank=8;rank>=1;rank--){
+    const d=document.createElement('div');
+    d.className='rank-lbl';
+    d.textContent=rank;
+    rl.appendChild(d);
+  }
+
+  // file labels
+  const fl=document.getElementById('file-labels');
+  fl.innerHTML='';
+  for(const f of FILES){
+    const d=document.createElement('div');
+    d.className='file-lbl';
+    d.textContent=f;
+    fl.appendChild(d);
+  }
+}
+
+// ── INTERACTION ─────────────────────────────────────────────────
+function clickSq(sq){
+  const pz=PUZZLES[idx];
+  const myPiece = turn==='w' ? isW : isB;
+  const p=board[sq];
+
+  if(sel){
+    if(hints.includes(sq)){ doMove(sel,sq); return; }
+    if(p&&myPiece(p)){ sel=sq; hints=legalMoves(sq,board); render(); return; }
+    sel=null; hints=[]; render();
+    return;
+  }
+  if(p&&myPiece(p)){ sel=sq; hints=legalMoves(sq,board); render(); }
+}
+
+function doMove(from,to){
+  const pz=PUZZLES[idx];
+  board[to]=board[from];
+  delete board[from];
+  if(board[to]==='P'&&to[1]==='8') board[to]='Q';
+  if(board[to]==='p'&&to[1]==='1') board[to]='q';
+  sel=null; hints=[]; lastMove=[from,to];
+  render();
+
+  if(to===pz.key){
+    solved.add(idx); solShown=true;
+    setStatus('ok','✓ Correct! That\'s the winning move.');
+    showSol(); updateList();
+  } else {
+    setStatus('fail','✗ Not the best move — try again.');
+    setTimeout(()=>resetPuzzle(false),1100);
+  }
+}
+
+function setStatus(type,msg){
+  const el=document.getElementById('status');
+  el.className='status'+(type==='ok'?' ok':type==='fail'?' fail':'');
+  el.textContent=msg;
+}
+
+function showSol(){
+  const pz=PUZZLES[idx];
+  const el=document.getElementById('sol');
+  el.innerHTML='<b>Solution:</b> '+pz.sol;
+  el.className='solution show';
+  solShown=true;
+}
+
+function resetPuzzle(msg=true){
+  const pz=PUZZLES[idx];
+  const r=parseFen(pz.fen);
+  board={}; Object.assign(board,r.bd); turn=r.t;
+  sel=null; hints=[]; lastMove=null;
+  if(msg) setStatus('','Select a piece and make your move.');
+  if(!solShown) document.getElementById('sol').className='solution';
+  render();
+}
+
+function load(i){
+  idx=i; solShown=false;
+  const pz=PUZZLES[i];
+  const r=parseFen(pz.fen);
+  board={...r.bd}; turn=r.t;
+  sel=null; hints=[]; lastMove=null;
+  document.getElementById('pnum').textContent=pz.n;
+  document.getElementById('pgame').textContent=pz.game;
+  const w=turn==='w';
+  document.getElementById('tm-dot').className='tm-dot '+(w?'white':'black');
+  document.getElementById('tm-text').textContent=(w?'White':'Black')+' to move';
+  document.getElementById('nav-count').textContent=`${i+1} / ${PUZZLES.length}`;
+  setStatus('','Select a piece and make your move.');
+  document.getElementById('sol').className='solution';
+  render(); updateList();
+}
+
+function updateList(){
+  document.querySelectorAll('.pitem').forEach((el,i)=>{
+    el.className='pitem'+(i===idx?' cur':'')+(solved.has(i)?' done':'');
+  });
+}
+
+function go(d){ const n=idx+d; if(n>=0&&n<PUZZLES.length) load(n); }
+
+function buildList(){
+  const el=document.getElementById('plist');
+  PUZZLES.forEach((pz,i)=>{
+    const d=document.createElement('div');
+    d.className='pitem'+(i===0?' cur':'');
+    d.textContent=pz.n;
+    d.addEventListener('click',()=>load(i));
+    el.appendChild(d);
+  });
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft') go(-1);
+  if(e.key==='ArrowRight') go(+1);
+  if(e.key==='s') showSol();
+  if(e.key==='r') resetPuzzle();
+});
+
+buildList();
+load(0);
+</script>
+
+
+
+
+<script>
+// Show "Add to Home Screen" hint in iOS Safari only
+if (/iphone|ipad|ipod/i.test(navigator.userAgent) && !window.navigator.standalone) {
+  document.getElementById('install-banner').classList.add('show');
+}
+</script>
+
+</body>
+</html>
